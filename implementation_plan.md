@@ -273,17 +273,17 @@ pytest tests/test_epc.py::test_compute_zero_clicks -v   # smoke
 [Implementation Order]
 Follow the brainstorming build order (Telegram → MiniMax → Scoring → Meta → Shopee → EPC → Insights), with tests and fixtures interleaved so each layer is validated before the next is built.
 
-1. **Scaffold project tree** — Create `hermes-v1/` directory, `modules/`, `data/{uploads,exports,fixtures}`, `tests/`, `docs/`. Copy brainstorming spec into `docs/`. Create `requirements.txt`, `.env.example`, `.gitignore`, `README.md`.
+1. **Scaffold project tree** [x] — Create `hermes-v1/` directory, `modules/`, `data/{uploads,exports,fixtures}`, `tests/`, `docs/`. Copy brainstorming spec into `docs/`. Create `requirements.txt`, `.env.example`, `.gitignore`, `README.md`.
 
-2. **Define types and constants** — Create `modules/models.py` (all dataclasses) and `modules/constants.py` (thresholds, allowed commands). Pure-Python, no external deps.
+2. **Define types and constants** [x] — Create `modules/models.py` (all dataclasses) and `modules/constants.py` (thresholds, allowed commands). Pure-Python, no external deps.
 
-3. **Install dependencies** — `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`. Verify `import telegram` and `import httpx` succeed.
+3. **Install dependencies** [x] — `python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt`. Verify `import telegram` and `import httpx` succeed.
 
-4. **Build EPC calculator (pure)** — `modules/epc_calculator.py` with `compute` + `compute_bulk`. Write `tests/test_epc.py`. **Run `pytest` → must pass.** Foundation every other module depends on.
+4. **Build EPC calculator (pure)** [x] — `modules/epc_calculator.py` with `compute` + `compute_bulk`. Write `tests/test_epc.py`. **Run `pytest` → must pass.** Foundation every other module depends on.
 
-5. **Build insight classifier (pure)** — `modules/insight_engine.py` with `classify_epc`. Write `tests/test_insight.py`. **Run `pytest` → must pass.**
+5. **Build insight classifier (pure)** [x] — `modules/insight_engine.py` with `classify_epc`. Write `tests/test_insight.py`. **Run `pytest` → must pass.**
 
-6. **Build Meta analyzer** — `modules/meta_analyzer.py` with `parse_meta_csv`. Create `data/fixtures/meta_sample.csv` matching user's real Malay-header schema (VIDEO PURDAH / VIDEO GLOVE / VIDEO BANGKU BOX rows + 2 extra rows). Write `tests/test_meta.py`. **Run `pytest`.**
+6. **Build Meta analyzer** [x] — `modules/meta_analyzer.py` with `parse_meta_csv`, `summarize_campaign`, `best_creative`, `worst_creative`. `data/fixtures/meta_sample.csv` covers VIDEO PURDAH / VIDEO GLOVE / VIDEO BANGKU BOX + 2 extra rows including a zero-click row. `tests/test_meta.py` has 38 tests. **81/81 green in 0.39s** (16 EPC + 31 Insight + 38 Meta + 0 Shopee wait — see Step 7). Source-of-truth refactor: `_META_HEADERS` tuple drives both the lowercase lookup map and the user-facing Bahasa error message.
 
 7. **Build Shopee analyzer** — `modules/shopee_analyzer.py` with `parse_click_csv`, `parse_commission_csv`, `_derive_campaign_key`. Create `data/fixtures/shopee_click_sample.csv` + `shopee_commission_sample.csv` derived from user's real data (subset of ~25 click rows, ~10 commission rows including the multi-item order 260618D4CNWBBW). Write `tests/test_shopee.py`. **Run `pytest`.**
 
