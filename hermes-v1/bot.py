@@ -721,15 +721,36 @@ async def error_handler(
 # Entry point
 # ---------------------------------------------------------------------------
 
-async def main() -> None:
-    """Build the :class:`Application` and start long-polling."""
+async def _on_shutdown(application: Application) -> None:
+    """Coroutine hook called by PTB while the polling loop is still running.
+
+    Closes the shared ``httpx.AsyncClient`` cleanly so the ``finally`` block
+    in :func:`main` doesn't need to nest event loops.
+    """
+    await close_client()
+    logger.info("Hermes bot stopped; MiniMax client closed.")
+
+
+def main() -> None:
+    """Build the :class:`Application` and start long-polling.
+
+    Note: PTB v21's :meth:`Application.run_polling` is a synchronous, blocking
+    call that manages its own event loop internally. Wrapping it in
+    ``asyncio.run`` would cause ``RuntimeError: This event loop is already
+    running`` on Python 3.13. So ``main`` is deliberately a plain ``def``.
+    """
     token = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
     if not token:
         raise RuntimeError(
             "TELEGRAM_BOT_TOKEN is missing. Set it in hermes-v1/.env."
         )
 
-    app = Application.builder().token(token).build()
+    app = (
+        Application.builder()
+        .token(token)
+        .post_shutdown(_on_shutdown)
+        .build()
+    )
 
     # Command handlers — order doesn't matter, but keep alphabetical for
     # readability. /cancel and /clear are non-spec convenience commands.
@@ -758,11 +779,10 @@ async def main() -> None:
         "Hermes bot starting (allowed commands=%s)",
         sorted(ALLOWED_COMMANDS),
     )
-    try:
-        await app.run_polling(allowed_updates=Update.ALL_TYPES)
-    finally:
-        await close_client()
-        logger.info("Hermes bot stopped; MiniMax client closed.")
+    # run_polling is synchronous in PTB v21 — it manages its own event loop
+    # and blocks until a stop signal (Ctrl+C / SIGTERM). The httpx client is
+    # closed via the post_shutdown hook registered above.
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
 if __name__ == "__main__":
@@ -770,5 +790,4 @@ if __name__ == "__main__":
         level=os.getenv("LOG_LEVEL", "INFO").upper(),
         format="%(asctime)s %(levelname)s %(name)s — %(message)s",
     )
-    asyncio_run = __import__("asyncio").run
-    asyncio_run(main())
+    main()
