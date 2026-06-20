@@ -1,0 +1,35 @@
+# Secrets
+.env
+*.env.local
+
+# Runtime data
+data/uploads/*
+!data/uploads/.gitkeep
+data/exports/*
+!data/exports/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+hermes.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
